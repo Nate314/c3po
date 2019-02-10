@@ -1,0 +1,21 @@
+{
+  "name": "bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && node dist/main.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/core-js": "^2.5.0",
+    "discord.js": "^11.4.2",
+    "dom-to-image": "^2.6.0",
+    "tsc": "^1.20150623.0",
+    "typescript": "^3.3.3",
+    "typescript-require": "^0.2.10",
+    "watch": "^1.0.2"
+  }
+}
