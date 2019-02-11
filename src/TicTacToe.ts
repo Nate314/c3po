@@ -81,8 +81,10 @@ export class TicTacToe {
                                             let winner = this.checkForWin(newBoard);
                                             if (winner !== '') {
                                                 if (winner === xORo) winner = sender;
+                                                else if (winner === 'xo') title = 'TIC TAC TOE ended in a TIE . . .'
                                                 else winner = otherplayer;
-                                                title = `${winner} won TIC TAC TOE`;
+                                                // if the game didn't end in a tie
+                                                if (winner === sender || winner === otherplayer) title = `${winner} won TIC TAC TOE . . .`;
                                             }
                                             // send back new board
                                             return <RichEmbed> {
@@ -131,7 +133,11 @@ export class TicTacToe {
             }
             if (symbol === 'x' || symbol === 'o') return symbol;
         }
-        return '';
+        let tie = true;
+        for (let i of ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+            if (board.indexOf(i) !== -1) tie = false;
+        if (tie) return 'xo';
+        else return '';
     }
 
     private static renderBoard(board: string): string {
