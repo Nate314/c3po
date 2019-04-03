@@ -1,6 +1,7 @@
 import { RichEmbed, Message } from 'discord.js';
 import { Say2 } from './Say2';
 import { TicTacToe } from './TicTacToe';
+import { HttpClient } from './httpclient';
 
 class Embed {
     embed: RichEmbed;
@@ -77,6 +78,50 @@ export class Commands {
             }
         });
     }
+
+    public static async redditProgrammingHumor(cp: CommandParam): Promise<Embed | string> {
+        const queryURL = 'https://www.reddit.com/r/programminghumor/top/.json?count=100';
+        let title = '';
+        let url = '';
+        return HttpClient.get(queryURL).then(body => {
+            if (cp.commandValue && !isNaN(Number(cp.commandValue))) {
+                let response = '';
+                for (let i = 0; i < Number(cp.commandValue); i++) {
+                    if (JSON.parse(body)['data']['children'][i]) {
+                        title = JSON.parse(body)['data']['children'][i]['data']['title'];
+                        url = JSON.parse(body)['data']['children'][i]['data']['url'];
+                        cp.message.channel.send(<Embed> {
+                            embed: <RichEmbed> {
+                                color: 3447003,
+                                title: title,
+                                file: url
+                            }
+                        });
+                    }
+                }
+                return response;
+            } else {
+                let index = 0;
+                for (let i = 0; i < 100; i++) {
+                    if (JSON.parse(body)['data']['children'][index]) {
+                        title = JSON.parse(body)['data']['children'][index]['data']['title'];
+                        url = JSON.parse(body)['data']['children'][index]['data']['url'];
+                        break;
+                    } else {
+                        index++;
+                    }
+                }
+                cp.message.channel.send(<Embed> {
+                    embed: <RichEmbed> {
+                        color: 3447003,
+                        title: title,
+                        file: url
+                    }
+                });
+                return '';
+            }
+        });
+    }
 }
 
 // List of commands
@@ -86,5 +131,6 @@ export const commandList = {
     'echo': Commands.echo,
     'multiply': Commands.multiply,
     'say2': Commands.say2,
-    'tictactoe': Commands.tictactoe
+    'tictactoe': Commands.tictactoe,
+    'ph': Commands.redditProgrammingHumor
 };

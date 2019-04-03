@@ -1,5 +1,5 @@
-import { Commands, CommandParam, commandList } from './src/commands';
-import { Client, Message, MessageCollector } from 'discord.js'
+import { CommandParam, commandList } from './src/commands';
+import { Client, Message } from 'discord.js'
 import * as db from './db.json';
 import * as config from './config.json';
 
@@ -43,7 +43,9 @@ botOnMessage((message: Message) => {
 
 // login and print 'ready' to console
 bot.login(config.token);
-botOnReady(() => console.log('ready'));
+botOnReady(() => {
+    console.log('ready');
+});
 
 function sendTheMessage(message, commandKey, response) {
     if (commandKey === 'help') {
