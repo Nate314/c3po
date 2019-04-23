@@ -7,7 +7,6 @@ class Embed {
     embed: RichEmbed;
 }
 
-
 export class CommandParam {
     message: Message;
     commandKey: string;
@@ -79,22 +78,51 @@ export class Commands {
         });
     }
 
+    public static async puppeteer(cp: CommandParam): Promise<Embed | string> {
+        const puppeteer = require('puppeteer');
+        const filename = `./bigboy-${new Date().getTime()}.png`;
+        return (async () => {
+            const browser = await puppeteer.launch();
+            const page = await browser.newPage();
+            await page.setViewport({
+                width:          Number(`${cp.commandValue}  `.split(' ')[0]),
+                height:         Number(`${cp.commandValue}  `.split(' ')[1]),
+            });
+            console.log(cp.commandValue);
+            await page.goto(`${cp.commandValue}  `.split(' ')[2]);
+            setTimeout(_ => _, 1000);
+            await page.screenshot({path: filename});
+            await browser.close();
+            
+            cp.message.channel.send(<Embed> {
+                embed: <RichEmbed> {
+                    color: 3447003,
+                    title: 'cp.commandValue',
+                    files: [
+                        filename
+                    ]
+                }
+            });
+            return 'hey';
+        })();
+    }
+
     public static async redditProgrammingHumor(cp: CommandParam): Promise<Embed | string> {
         const queryURL = 'https://www.reddit.com/r/programminghumor/top/.json?count=100';
-        let title = '';
-        let url = '';
         return HttpClient.get(queryURL).then(body => {
             if (cp.commandValue && !isNaN(Number(cp.commandValue))) {
                 let response = '';
                 for (let i = 0; i < Number(cp.commandValue); i++) {
-                    if (JSON.parse(body)['data']['children'][i]) {
-                        title = JSON.parse(body)['data']['children'][i]['data']['title'];
-                        url = JSON.parse(body)['data']['children'][i]['data']['url'];
+                    const element = JSON.parse(body)['data']['children'][i];
+                    if (element) {
+                        const { title, url } = element['data'];
                         cp.message.channel.send(<Embed> {
                             embed: <RichEmbed> {
                                 color: 3447003,
                                 title: title,
-                                file: url
+                                image: {
+                                    url: url
+                                }
                             }
                         });
                     }
@@ -103,21 +131,23 @@ export class Commands {
             } else {
                 let index = 0;
                 for (let i = 0; i < 100; i++) {
-                    if (JSON.parse(body)['data']['children'][index]) {
-                        title = JSON.parse(body)['data']['children'][index]['data']['title'];
-                        url = JSON.parse(body)['data']['children'][index]['data']['url'];
+                    const element = JSON.parse(body)['data']['children'][index];
+                    if (element) {
+                        const { title, url } = element['data'];
+                        cp.message.channel.send(<Embed> {
+                            embed: <RichEmbed> {
+                                color: 3447003,
+                                title: title,
+                                image: {
+                                    url: url
+                                }
+                            }
+                        });
                         break;
                     } else {
                         index++;
                     }
                 }
-                cp.message.channel.send(<Embed> {
-                    embed: <RichEmbed> {
-                        color: 3447003,
-                        title: title,
-                        file: url
-                    }
-                });
                 return '';
             }
         });
@@ -132,5 +162,6 @@ export const commandList = {
     'multiply': Commands.multiply,
     'say2': Commands.say2,
     'tictactoe': Commands.tictactoe,
-    'ph': Commands.redditProgrammingHumor
+    'ph': Commands.redditProgrammingHumor,
+    'pup': Commands.puppeteer
 };
