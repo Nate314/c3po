@@ -16,7 +16,7 @@ botOnMessage((message: Message) => {
         message.channel.startTyping();
         // parse commandKey and commandValue
         const userMessage = message.content.substr('c?'.length);
-        const commandKey = `${userMessage} `.split(' ')[0];
+        const commandKey = `${`${userMessage} `.split(' ')[0]}\n`.split('\n')[0];
         const commandValue = userMessage.substr(commandKey.length).trim();
         console.log(`command: '${commandKey}', value: '${commandValue}'`);
         // if a valid command key was sent
