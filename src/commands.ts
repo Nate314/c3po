@@ -2,8 +2,9 @@ import { RichEmbed, Message } from 'discord.js';
 import { Say2 } from './Say2';
 import { TicTacToe } from './TicTacToe';
 import { HttpClient } from './httpclient';
+import { executeCode } from './CodeRunner';
 
-class Embed {
+export class Embed {
     embed: RichEmbed;
 }
 
@@ -25,7 +26,8 @@ export class Commands {
             'c?tictactoe => (start a game of tic tac toe)',
             'c?ph <number> => (return <number> r/programmerhumor memes)',
             'c?pup <width> <height> <link> => (returns an image of the link sent at (<width>, <height>) resolution)',
-            'c?js <javascript code> => executes javascript code like "(() => 4 + 5);" and returns result'
+            'c?js <javascript code> => executes javascript code like "(() => 4 + 5);" and returns result',
+            'c?py <javascript code> => executes javascript code like "def main(): return 4 + 5" and returns result'
         ];
         return <Embed> {
                 embed: <RichEmbed> {
@@ -156,46 +158,14 @@ export class Commands {
         });
     }
 
-    
     public static async executeJS(cp: CommandParam): Promise<Embed | string> {
-        const get_code = (val: string): string => {
-            if (!!val && val.substr(0, 3) === '```' && val.substr(val.length - 3, 3) === '```') {
-                let result = val.substr(3, val.length - 6).trim();
-                ['js', 'javascript', 'java'].forEach(prefix => {
-                    if (result.startsWith(prefix)) {
-                        result = result.substr(prefix.length).trim();
-                    }
-                });
-                return result;
-            } else {
-                return val;
-            }
-        }
-        const get_title = (title: string): string => {
-            if (title.length > 255) {
-                const elipses = ' . . .';
-                const candidate = `${title}\n`.split('\n')[0] + elipses;
-                if (candidate.length < 255) {
-                    return candidate;
-                } else {
-                    return title.substr(0, 255 - elipses.length) + elipses;
-                }
-            } else {
-                return title;
-            }
-        };
         const queryURL = 'https://test--nate314.repl.co/js';
-        const code = get_code(cp.commandValue);
-        return HttpClient.post(queryURL, JSON.stringify({ code: code })).then(response => {
-            cp.message.channel.send(<Embed> {
-                embed: <RichEmbed> {
-                    color: 3447003,
-                    title: get_title(code),
-                    description: response
-                }
-            });
-            return '';
-        });
+        return executeCode(cp, queryURL, cp.commandValue, ['js', 'javascript', 'java']);
+    }
+
+    public static async executePython(cp: CommandParam): Promise<Embed | string> {
+        const queryURL = 'https://Python-Test--nate314.repl.co/py';
+        return executeCode(cp, queryURL, cp.commandValue, ['py', 'python', 'python3']);
     }
 }
 
@@ -209,5 +179,6 @@ export const commandList = {
     'tictactoe': Commands.tictactoe,
     'ph': Commands.redditProgrammingHumor,
     'pup': Commands.puppeteer,
-    'js': Commands.executeJS
+    'js': Commands.executeJS,
+    'py': Commands.executePython
 };
