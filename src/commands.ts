@@ -156,8 +156,22 @@ export class Commands {
         });
     }
 
+    
     public static async executeJS(cp: CommandParam): Promise<Embed | string> {
-        const get_title = (title: string) => {
+        const get_code = (val: string): string => {
+            if (!!val && val.substr(0, 3) === '```' && val.substr(val.length - 3, 3) === '```') {
+                let result = val.substr(3, val.length - 6).trim();
+                ['js', 'javascript', 'java'].forEach(prefix => {
+                    if (result.startsWith(prefix)) {
+                        result = result.substr(prefix.length).trim();
+                    }
+                });
+                return result;
+            } else {
+                return val;
+            }
+        }
+        const get_title = (title: string): string => {
             if (title.length > 255) {
                 const elipses = ' . . .';
                 const candidate = `${title}\n`.split('\n')[0] + elipses;
@@ -171,7 +185,7 @@ export class Commands {
             }
         };
         const queryURL = 'https://test--nate314.repl.co/js';
-        const code = cp.commandValue;
+        const code = get_code(cp.commandValue);
         return HttpClient.post(queryURL, JSON.stringify({ code: code })).then(response => {
             cp.message.channel.send(<Embed> {
                 embed: <RichEmbed> {
