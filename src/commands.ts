@@ -17,12 +17,15 @@ export class Commands {
 
     public static help(cp: CommandParam): Embed {
         let commands = [
-            'c?help =>(get list of commands)',
-            'c?servertime =>(returns the datetime of the server)',
-            'c?echo <message> =>(sends back <message>)',
-            'c?multiply <x> <message> =>(sends back <message> <x> number of times)',
-            'c?say2 <number> =>(sends back <number> in english text)',
-            'c?tictactoe =>(start a game of tic tac toe)'
+            'c?help => (get list of commands)',
+            'c?servertime => (returns the datetime of the server)',
+            'c?echo <message> => (sends back <message>)',
+            'c?multiply <x> <message> => (sends back <message> <x> number of times)',
+            'c?say2 <number> => (sends back <number> in english text)',
+            'c?tictactoe => (start a game of tic tac toe)',
+            'c?ph <number> => (return <number> r/programmerhumor memes)',
+            'c?pup <width> <height> <link> => (returns an image of the link sent at (<width>, <height>) resolution)',
+            'c?js <javascript code> => executes javascript code like "(() => 4 + 5);" and returns result'
         ];
         return <Embed> {
                 embed: <RichEmbed> {
@@ -152,6 +155,34 @@ export class Commands {
             }
         });
     }
+
+    public static async executeJS(cp: CommandParam): Promise<Embed | string> {
+        const get_title = (title: string) => {
+            if (title.length > 255) {
+                const elipses = ' . . .';
+                const candidate = `${title}\n`.split('\n')[0] + elipses;
+                if (candidate.length < 255) {
+                    return candidate;
+                } else {
+                    return title.substr(0, 255 - elipses.length) + elipses;
+                }
+            } else {
+                return title;
+            }
+        };
+        const queryURL = 'https://test--nate314.repl.co/js';
+        const code = cp.commandValue;
+        return HttpClient.post(queryURL, JSON.stringify({ code: code })).then(response => {
+            cp.message.channel.send(<Embed> {
+                embed: <RichEmbed> {
+                    color: 3447003,
+                    title: get_title(code),
+                    description: response
+                }
+            });
+            return '';
+        });
+    }
 }
 
 // List of commands
@@ -163,5 +194,6 @@ export const commandList = {
     'say2': Commands.say2,
     'tictactoe': Commands.tictactoe,
     'ph': Commands.redditProgrammingHumor,
-    'pup': Commands.puppeteer
+    'pup': Commands.puppeteer,
+    'js': Commands.executeJS
 };
