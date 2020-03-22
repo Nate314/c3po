@@ -1,6 +1,5 @@
 import { CommandParam, commandList } from './src/commands';
 import { Client, Message } from 'discord.js'
-import * as db from './db.json';
 import * as config from './config.json';
 
 const bot = new Client();
@@ -21,17 +20,16 @@ botOnMessage((message: Message) => {
         console.log(`command: '${commandKey}', value: '${commandValue}'`);
         // if a valid command key was sent
         if (Object.keys(commandList).indexOf(commandKey) != -1) {
-            const cp = <CommandParam> {
+            // get response and send it back
+            const resp = commandList[commandKey](<CommandParam> {
                 message: message,
                 commandKey: commandKey,
                 commandValue: commandValue
-            }
-            // get response and send it back
-            const resp = commandList[commandKey](cp)
+            });
             if (resp.then === undefined) {
-                sendTheMessage(message, commandKey, resp);
+                sendTheMessage(message, resp);
             } else {
-                resp.then(response => sendTheMessage(message, commandKey, response));
+                resp.then(response => sendTheMessage(message, response)).catch(err => sendTheMessage(message, 'Error!' + err.toString()));
             }
         } else {
             // if an invalid command key was send
@@ -47,12 +45,7 @@ botOnReady(() => {
     console.log('ready');
 });
 
-function sendTheMessage(message, commandKey, response) {
-    if (commandKey === 'help') {
-        message.channel.sendMessage(db.greeting, {files: [db.images.c3po]})
-            .then(() => message.channel.send(response));
-    } else {
-        response = response === '' ? '.' : response;
-        message.channel.send(response);
-    }
+function sendTheMessage(message, response) {
+    response = response === '' ? '.' : response;
+    message.channel.send(response);
 }
