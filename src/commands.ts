@@ -76,29 +76,30 @@ export class Commands {
         // https://github.com/puppeteer/puppeteer/issues/3443
         // npm i puppeteer
         // sudo apt-get install gconf-service libasound2 libatk1.0-0 libatk-bridge2.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget
-        const puppeteer = require('puppeteer');
-        return (async () => {
-            console.log('new browser');
-            const browser = await puppeteer.launch({args: ['--no-sandbox'], dumpio: true});
-            console.log('new page');
-            const page = await browser.newPage();
-            const w = Number(`${cp.commandValue}  `.split(' ')[0]), h = Number(`${cp.commandValue}  `.split(' ')[1]);
-            console.log(`set viewport = (${w}, ${h})`);
-            await page.setViewport({ width: w, height: h });
-            console.log('page goto');
-            await page.goto(`${cp.commandValue}  `.split(' ')[2]);
-            setTimeout(async () => {
-                const filename = `puppeteer-${new Date().getTime()}.png`;
-                console.log(`filename = ${filename}`);
-                console.log('page screenshot');
-                let image = await page.screenshot({path: filename, type: 'png'});
-                console.log(image);
-                await browser.close();
-                console.log('message send');
-                cp.message.channel.send(makeEmbed('cp.commandValue', undefined, undefined, filename));
-            }, 1000);
-            return 'hey';
-        })();
+        const linux = process.platform !== 'win32';
+        const fs = require('fs');
+        const puppeteer = require(`puppeteer${linux ? '-core' : ''}`);
+        const options = {args: ['--no-sandbox'], dumpio: true};
+        if (linux) {
+            options['executablePath'] = '/usr/bin/chromium-browser';
+        }
+        const browser = await puppeteer.launch(options);
+        const page = await browser.newPage();
+        const w = Number(`${cp.commandValue}  `.split(' ')[0]), h = Number(`${cp.commandValue}  `.split(' ')[1]);
+        const url = `${cp.commandValue}  `.split(' ')[2];
+        await page.setViewport({ width: w, height: h });
+        await page.goto(url);
+        setTimeout(async () => {
+            const filename = `puppeteer-${new Date().getTime()}.png`;
+            await page.screenshot({path: filename, type: 'png'});
+            await browser.close();
+            cp.message.channel.send(makeEmbed(url, undefined, undefined, filename)).then(() => {
+                fs.unlink(filename, function (err) {
+                    if (err) throw err;
+                }); 
+            });
+        }, 1000);
+        return '';
     }
 
     public static async reddit(cp: CommandParam) {
