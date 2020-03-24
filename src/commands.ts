@@ -1,10 +1,10 @@
-import * as db from '../db.json';
 import { RichEmbed, Message } from 'discord.js';
 import { Say2 } from './Say2';
-import { TicTacToe } from './TicTacToe';
+import { TicTacToe } from './games/TicTacToe';
 import { HttpClient } from './httpclient';
 import { executeCode } from './CodeRunner';
 import { makeEmbed, Browser } from './Utility';
+import * as db from '../db.json';
 
 export class Embed {
     embed: RichEmbed;
@@ -32,7 +32,6 @@ export class Commands {
             'c?py <javascript code> => executes javascript code like "def main(): return 4 + 5" and returns result',
             'c?mixcase <message> => (returns the <message> in MiXeD CaSe)'
         ];
-        
         return cp.message.channel.send(db.greeting, {files: [db.images.c3po]})
             .then(() => makeEmbed('c3po Commands Include:', commands.join('\n')));
     }
@@ -63,17 +62,14 @@ export class Commands {
     }
 
     public static async tictactoe(cp: CommandParam): Promise<Embed | string> {
-        return TicTacToe.compute(cp).then(async resp => {
+        // return TicTacToe.compute(cp).then(async resp => {
+        return TicTacToe(cp).then(async resp => {
             if (typeof resp === 'object') {
                 const embed = (<Embed> resp).embed;
                 const board = embed.footer.text.split(',')[4].split('').join('.');
                 const url = `https://simplegamerenders.nathangawith.com/tictactoe/?colors=green.blue.red&board=${board}`;
                 const filename = await Commands.puppeteer(546, 546, url);
-                console.log(embed.title);
-                console.log(filename);
-                console.log(embed.footer.text);
                 const richEmbed = makeEmbed(embed.title, undefined, undefined, filename, embed.footer.text);
-                console.log(richEmbed);
                 return richEmbed;
             } else {
                 return <string> resp;

@@ -1,4 +1,4 @@
-import { CommandParam, commandList } from './src/commands';
+import { CommandParam, commandList, Embed } from './src/commands';
 import { Client, Message } from 'discord.js'
 import { Browser } from './src/Utility';
 import * as config from './config.json';
@@ -13,7 +13,9 @@ const botOnReady = (callback) => bot.on('ready', () => callback());
 botOnMessage((message: Message) => {
     // only parse messages that start with c?
     if (message.content.indexOf('c?') === 0) {
+        const startTime = new Date().getTime();
         message.channel.startTyping();
+        let resp = undefined;
         // parse commandKey and commandValue
         const userMessage = message.content.substr('c?'.length);
         const commandKey = `${`${userMessage} `.split(' ')[0]}\n`.split('\n')[0];
@@ -22,21 +24,19 @@ botOnMessage((message: Message) => {
         // if a valid command key was sent
         if (Object.keys(commandList).indexOf(commandKey) != -1) {
             // get response and send it back
-            const resp = commandList[commandKey](<CommandParam> {
+            resp = commandList[commandKey](<CommandParam> {
                 message: message,
                 commandKey: commandKey,
                 commandValue: commandValue
             });
-            if (resp.then === undefined) {
-                sendTheMessage(message, resp);
-            } else {
-                resp.then(response => sendTheMessage(message, response)).catch(err => sendTheMessage(message, 'Error!' + err.toString()));
-            }
         } else {
             // if an invalid command key was send
-            message.channel.send(`${404} - command '${commandKey + commandValue}' is unknown`);
+            resp = `${404} - command '${commandKey + commandValue}' is unknown`;
         }
-        message.channel.stopTyping();
+        let promise = resp.then === undefined ? sendTheMessage(message, resp, startTime)
+            : resp.then(response => sendTheMessage(message, response, startTime))
+                  .catch(err => sendTheMessage(message, 'Error!' + err.toString(), startTime));
+        promise.then(() => message.channel.stopTyping());
     }
 });
 
@@ -66,7 +66,12 @@ botOnReady(() => {
     });
 });
 
-function sendTheMessage(message, response) {
-    response = response === '' ? '.' : response;
-    message.channel.send(response);
+function sendTheMessage(message: Message, response: Embed | string, startTime: number): Promise<any> {
+    const now = new Date().getTime();
+    return new Promise(resolve => {
+        setTimeout(() => {
+            response = response === '' ? '.' : response;
+            return message.channel.send(response).then(() => resolve());
+        }, Math.min(1000, 1000 - Math.abs(now - startTime)));
+    });
 }
