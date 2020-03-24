@@ -4,7 +4,7 @@ import { Say2 } from './Say2';
 import { TicTacToe } from './TicTacToe';
 import { HttpClient } from './httpclient';
 import { executeCode } from './CodeRunner';
-import { makeEmbed } from './Utility';
+import { makeEmbed, Browser } from './Utility';
 
 export class Embed {
     embed: RichEmbed;
@@ -63,43 +63,50 @@ export class Commands {
     }
 
     public static async tictactoe(cp: CommandParam): Promise<Embed | string> {
-        return TicTacToe.compute(cp).then(resp => {
-            if (resp['title'] !== undefined) {
-                return makeEmbed(resp);
+        return TicTacToe.compute(cp).then(async resp => {
+            if (typeof resp === 'object') {
+                const embed = (<Embed> resp).embed;
+                const board = embed.footer.text.split(',')[4].split('').join('.');
+                const url = `https://simplegamerenders.nathangawith.com/tictactoe/?colors=green.blue.red&board=${board}`;
+                const filename = await Commands.puppeteer(546, 546, url);
+                console.log(embed.title);
+                console.log(filename);
+                console.log(embed.footer.text);
+                const richEmbed = makeEmbed(embed.title, undefined, undefined, filename, embed.footer.text);
+                console.log(richEmbed);
+                return richEmbed;
             } else {
                 return <string> resp;
             }
         });
     }
 
-    public static async puppeteer(cp: CommandParam): Promise<Embed | string> {
-        // https://github.com/puppeteer/puppeteer/issues/3443
-        // npm i puppeteer
-        // sudo apt-get install gconf-service libasound2 libatk1.0-0 libatk-bridge2.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget
-        const linux = process.platform !== 'win32';
+    public static async puppeteer(w: number, h: number, url: string): Promise<string> {
         const fs = require('fs');
-        const puppeteer = require(`puppeteer${linux ? '-core' : ''}`);
-        const options = {args: ['--no-sandbox'], dumpio: true};
-        if (linux) {
-            options['executablePath'] = '/usr/bin/chromium-browser';
-        }
-        const browser = await puppeteer.launch(options);
-        const page = await browser.newPage();
-        const w = Number(`${cp.commandValue}  `.split(' ')[0]), h = Number(`${cp.commandValue}  `.split(' ')[1]);
-        const url = `${cp.commandValue}  `.split(' ')[2];
-        await page.setViewport({ width: w, height: h });
-        await page.goto(url);
-        setTimeout(async () => {
-            const filename = `puppeteer-${new Date().getTime()}.png`;
-            await page.screenshot({path: filename, type: 'png'});
-            await browser.close();
-            cp.message.channel.send(makeEmbed(url, undefined, undefined, filename)).then(() => {
-                fs.unlink(filename, function (err) {
-                    if (err) throw err;
-                }); 
-            });
-        }, 1000);
-        return '';
+        await Browser.page.setViewport({ width: w, height: h });
+        await Browser.page.goto(url);
+        return new Promise(resolve => {
+            setTimeout(async () => {
+                const filename = `puppeteer-${new Date().getTime()}.png`;
+                await Browser.page.screenshot({path: filename, type: 'png'});
+                // await Browser.browser.close();
+                setTimeout(() => {
+                    fs.unlink(filename, function (err) {
+                        if (err) throw err;
+                    });
+                }, 2000);
+                resolve(filename);
+            }, 0);
+        });
+    }
+
+    public static async pup(cp: CommandParam): Promise<Embed | string> {
+        const commandParts = `${cp.commandValue}  `.split(' ');
+        const width = Number(commandParts[0]) || 128;
+        const height = Number(commandParts[1]) || 128;
+        const url = commandParts[2] || commandParts[0];
+        return Commands.puppeteer(width, height, url)
+            .then(filename => makeEmbed(url, undefined, undefined, filename));
     }
 
     public static async reddit(cp: CommandParam) {
@@ -175,7 +182,7 @@ export const commandList = {
     'tictactoe': Commands.tictactoe,
     'reddit': Commands.reddit,
     'ph': Commands.programmerhumor,
-    'pup': Commands.puppeteer,
+    'pup': Commands.pup,
     'js': Commands.executeJS,
     'py': Commands.executePython,
     'mixcase': Commands.mixCase

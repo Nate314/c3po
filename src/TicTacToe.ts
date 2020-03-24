@@ -1,9 +1,9 @@
 import { RichEmbed } from "discord.js";
-import { CommandParam } from "./commands";
+import { CommandParam, Embed } from "./commands";
 
 export class TicTacToe {
 
-    public static async compute(cp: CommandParam): Promise<RichEmbed | string> {
+    public static async compute(cp: CommandParam): Promise<Embed | string> {
         const dummystring = '123456789987654321123456789987654321!@#$%^&*()_+'
         const command = `${cp.commandValue} `.split(' ')[0];
         const sender = cp.message.author.username;
@@ -30,19 +30,21 @@ export class TicTacToe {
                 return err;
         }
         if (player1 && player2 && board) {
-            return <RichEmbed> {
-                color: 3447003,
-                title: `TICTACTOE (${sender}'s turn) . . . .`,
-                description: TicTacToe.renderBoard(board),
-                footer: {
-                    text: `${player1},x,${player2},o,${board}`
+            return <Embed> {
+                embed: <RichEmbed> {
+                    color: 3447003,
+                    title: `TICTACTOE (${sender}'s turn) . . . .`,
+                    description: TicTacToe.renderBoard(board),
+                    footer: {
+                        text: `${player1},x,${player2},o,${board}`
+                    }
                 }
             };
         }
         else return 'ERR: could not compute';
     }
 
-    private static async turn(cp: CommandParam, sender: string, position: string): Promise<RichEmbed | string> {
+    private static async turn(cp: CommandParam, sender: string, position: string): Promise<Embed | string> {
         let result = '';
         if (sender && position) return await cp.message.channel.fetchMessages({ limit: 20 })
             .then(messages => {
@@ -87,12 +89,14 @@ export class TicTacToe {
                                                 if (winner === sender || winner === otherplayer) title = `${winner} won TIC TAC TOE . . .`;
                                             }
                                             // send back new board
-                                            return <RichEmbed> {
-                                                color: 3447003,
-                                                title: title,
-                                                description: TicTacToe.renderBoard(newBoard),
-                                                footer: {
-                                                    text: `${otherplayer},${xORo === 'x' ? 'o' : 'x'},${sender},${xORo},${newBoard}`
+                                            return <Embed> {
+                                                embed: <RichEmbed> {
+                                                    color: 3447003,
+                                                    title: title,
+                                                    description: TicTacToe.renderBoard(newBoard),
+                                                    footer: {
+                                                        text: `${otherplayer},${xORo === 'x' ? 'o' : 'x'},${sender},${xORo},${newBoard}`
+                                                    }
                                                 }
                                             };
                                         };
