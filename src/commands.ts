@@ -21,22 +21,27 @@ export class Commands {
 
     public static help(cp: CommandParam): Promise<Embed> {
         let commands = [
-            'c?help => (get list of commands)',
-            'c?servertime => (returns the datetime of the server)',
-            'c?echo <message> => (sends back <message>)',
-            'c?multiply <x> <message> => (sends back <message> <x> number of times)',
-            'c?say2 <number> => (sends back <number> in english text)',
-            'c?tictactoe => (start a game of tic tac toe)',
-            'c?fifteen <size> => (start a game of fifteen with size of <size> (valid sizes are 3, 8, 15))',
-            'c?ph <number> => (return <number> r/programmerhumor memes)',
-            'c?pup <width> <height> <link> => (returns an image of the link sent at (<width>, <height>) resolution)',
-            'c?js <javascript code> => executes javascript code like "(() => 4 + 5);" and returns result',
-            'c?py <javascript code> => executes javascript code like "def main(): return 4 + 5" and returns result',
-            'c?mixcase <message> => (returns the <message> in MiXeD CaSe)',
-            'c?mixcaserand <message> => (returns the <message> in RAndoM mixEd CASe)'
+            '\n\nGENERAL COMMANDS\n--------------------------------',
+            '\nc?help', ' => get list of commands',
+            '\nc?servertime', ' => returns the datetime of the server',
+            '\n\nGAME COMMANDS\n--------------------------------',
+            '\nc?tictactoe', ' => start a game of tic tac toe',
+            '\nc?fifteen <size>', ' => start a game of fifteen with size of <size> (valid sizes are 3, 8, 15)',
+            '\n\nINTERNET COMMANDS\n--------------------------------',
+            '\nc?reddit <subreddit> <number>', ' => return <number> r/<subreddit> memes',
+            '\nc?ph <number>', ' => return <number> r/programmerhumor memes',
+            '\nc?pup <width> <height> <link>', ' => returns an image of the link sent at (<width>, <height>) resolution',
+            '\nc?js <javascript code>', ' => xecutes javascript code like "(() => 4 + 5);" and returns result',
+            '\nc?py <javascript code>', ' => xecutes javascript code like "def main(): return 4 + 5" and returns result',
+            '\n\nTEXT MANIPULATION COMMANDS\n--------------------------------',
+            '\nc?echo <message>', ' => sends back <message>',
+            '\nc?multiply <x> <message>', ' => sends back <message> <x> number of times',
+            '\nc?say2 <number>', ' => sends back <number> in english text',
+            '\nc?mixcase <message>', ' => returns the <message> in MiXeD CaSe',
+            '\nc?mixcaserand <message>', ' => returns the <message> in RAndoM mixEd CASe'
         ];
         return cp.message.channel.send(db.greeting, {files: [db.images.c3po]})
-            .then(() => makeEmbed('c3po Commands Include:', commands.join('\n')));
+            .then(() => makeEmbed('c3po Commands Include:', '```\n' + commands.join('\n') + '\n```'));
     }
 
     public static servertime(cp: CommandParam): Embed {
