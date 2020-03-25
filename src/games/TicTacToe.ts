@@ -9,6 +9,8 @@ export function TicTacToe(cp: CommandParam): Promise<Embed | string> {
 
     const initialBoard = '123456789';
 
+    const players = 2;
+
     const playTurn = (board, position, xORo) => board.replace(position, xORo);
 
     const checkForWin = (board: string): string => {
@@ -57,5 +59,5 @@ export function TicTacToe(cp: CommandParam): Promise<Embed | string> {
         return result;
     };
 
-    return new AbstractGame(cmd, title, initialBoard, playTurn, checkForWin, renderBoard).compute(cp);
+    return new AbstractGame(cmd, title, initialBoard, players, playTurn, checkForWin, renderBoard).compute(cp);
 };

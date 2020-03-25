@@ -5,6 +5,7 @@ import { HttpClient } from './httpclient';
 import { executeCode } from './CodeRunner';
 import { makeEmbed, Browser } from './Utility';
 import * as db from '../db.json';
+import { Fifteen } from './games/Fifteen';
 
 export class Embed {
     embed: RichEmbed;
@@ -26,11 +27,13 @@ export class Commands {
             'c?multiply <x> <message> => (sends back <message> <x> number of times)',
             'c?say2 <number> => (sends back <number> in english text)',
             'c?tictactoe => (start a game of tic tac toe)',
+            'c?fifteen <size> => (start a game of fifteen with size of <size> (valid sizes are 3, 8, 15))',
             'c?ph <number> => (return <number> r/programmerhumor memes)',
             'c?pup <width> <height> <link> => (returns an image of the link sent at (<width>, <height>) resolution)',
             'c?js <javascript code> => executes javascript code like "(() => 4 + 5);" and returns result',
             'c?py <javascript code> => executes javascript code like "def main(): return 4 + 5" and returns result',
-            'c?mixcase <message> => (returns the <message> in MiXeD CaSe)'
+            'c?mixcase <message> => (returns the <message> in MiXeD CaSe)',
+            'c?mixcaserand <message> => (returns the <message> in RAndoM mixEd CASe)'
         ];
         return cp.message.channel.send(db.greeting, {files: [db.images.c3po]})
             .then(() => makeEmbed('c3po Commands Include:', commands.join('\n')));
@@ -61,13 +64,12 @@ export class Commands {
         else return Say2.compute(cp.commandValue);
     }
 
-    public static async tictactoe(cp: CommandParam): Promise<Embed | string> {
-        // return TicTacToe.compute(cp).then(async resp => {
-        return TicTacToe(cp).then(async resp => {
+    public static async renderGame(gameFunc: any, cp: CommandParam, path: string, colors: string, joinString: string): Promise<Embed | string> {
+        return (<Promise<Embed | string>> gameFunc(cp)).then(async resp => {
             if (typeof resp === 'object') {
                 const embed = (<Embed> resp).embed;
-                const board = embed.footer.text.split(',')[4].split('').join('.');
-                const url = `https://simplegamerenders.nathangawith.com/tictactoe/?colors=green.blue.red&board=${board}`;
+                const board = embed.footer.text.split(',')[4].split('').join(joinString);
+                const url = `https://simplegamerenders.nathangawith.com/${path}/?colors=${colors}&board=${board}`;
                 const filename = await Commands.puppeteer(546, 546, url);
                 const richEmbed = makeEmbed(embed.title, undefined, undefined, filename, embed.footer.text);
                 return richEmbed;
@@ -75,6 +77,14 @@ export class Commands {
                 return <string> resp;
             }
         });
+    }
+
+    public static async tictactoe(cp: CommandParam): Promise<Embed | string> {
+        return Commands.renderGame(TicTacToe, cp, 'tictactoe', 'green.blue.red', '.');
+    }
+
+    public static async fifteen(cp: CommandParam): Promise<Embed | string> {
+        return Commands.renderGame(Fifteen, cp, 'fifteen', 'red.green', '');
     }
 
     public static async puppeteer(w: number, h: number, url: string): Promise<string> {
@@ -166,6 +176,13 @@ export class Commands {
     public static async mixCase(cp: CommandParam): Promise<Embed | string> {
         return cp.commandValue.split('').map((v, i) => v[i % 2 === 0 ? 'toLowerCase' : 'toUpperCase']()).join('');
     }
+
+    public static async mixCaseRand(cp: CommandParam): Promise<Embed | string> {
+        const str = cp.commandValue;
+        const lower = str.toLowerCase();
+        const upper = str.toUpperCase();
+        return Array(str.length).fill(null).map((_, i) => (Math.random() < 0.5 ? lower : upper)[i]).join('');
+    }
 }
 
 // List of commands
@@ -176,10 +193,12 @@ export const commandList = {
     'multiply': Commands.multiply,
     'say2': Commands.say2,
     'tictactoe': Commands.tictactoe,
+    'fifteen': Commands.fifteen,
     'reddit': Commands.reddit,
     'ph': Commands.programmerhumor,
     'pup': Commands.pup,
     'js': Commands.executeJS,
     'py': Commands.executePython,
-    'mixcase': Commands.mixCase
+    'mixcase': Commands.mixCase,
+    'mixcaserand': Commands.mixCaseRand
 };
