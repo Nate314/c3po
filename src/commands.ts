@@ -1,11 +1,12 @@
 import { RichEmbed, Message } from 'discord.js';
-import { Say2 } from './Say2';
-import { TicTacToe } from './games/TicTacToe';
-import { HttpClient } from './httpclient';
-import { executeCode } from './CodeRunner';
 import { makeEmbed, Browser } from './Utility';
-import * as db from '../db.json';
+import { executeCode } from './CodeRunner';
+import { TicTacToe } from './games/TicTacToe';
 import { Fifteen } from './games/Fifteen';
+import { Mancala } from './games/Mancala';
+import { HttpClient } from './httpclient';
+import { Say2 } from './Say2';
+import * as db from '../db.json';
 
 export class Embed {
     embed: RichEmbed;
@@ -27,6 +28,7 @@ export class Commands {
             '\n\nGAME COMMANDS\n--------------------------------',
             '\nc?tictactoe', ' => start a game of tic tac toe',
             '\nc?fifteen <size>', ' => start a game of fifteen with size of <size> (valid sizes are 3, 8, 15)',
+            '\nc?mancala', ' => start a game of mancala',
             '\n\nINTERNET COMMANDS\n--------------------------------',
             '\nc?reddit <subreddit> <number>', ' => return <number> r/<subreddit> memes',
             '\nc?ph <number>', ' => return <number> r/programmerhumor memes',
@@ -75,7 +77,7 @@ export class Commands {
                 const embed = (<Embed> resp).embed;
                 const board = embed.footer.text.split(',')[4].split('').join(joinString);
                 const url = `https://simplegamerenders.nathangawith.com/${path}/?colors=${colors}&board=${board}`;
-                const filename = await Commands.puppeteer(546, 546, url);
+                const filename = await Commands.puppeteer((path === 'mancala' ? 2 : 1) * 546, 546, url);
                 const richEmbed = makeEmbed(embed.title, undefined, undefined, filename, embed.footer.text);
                 return richEmbed;
             } else {
@@ -90,6 +92,10 @@ export class Commands {
 
     public static async fifteen(cp: CommandParam): Promise<Embed | string> {
         return Commands.renderGame(Fifteen, cp, 'fifteen', 'red.green', '');
+    }
+
+    public static async mancala(cp: CommandParam): Promise<Embed | string> {
+        return Commands.renderGame(Mancala, cp, 'mancala', 'magenta.blue', '');
     }
 
     public static async puppeteer(w: number, h: number, url: string): Promise<string> {
@@ -199,6 +205,7 @@ export const commandList = {
     'say2': Commands.say2,
     'tictactoe': Commands.tictactoe,
     'fifteen': Commands.fifteen,
+    'mancala': Commands.mancala,
     'reddit': Commands.reddit,
     'ph': Commands.programmerhumor,
     'pup': Commands.pup,

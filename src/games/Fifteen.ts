@@ -29,7 +29,9 @@ export function Fifteen(cp: CommandParam): Promise<Embed | string> {
 
     const players = 1;
 
-    const playTurn = (board: string, position: number | string) => {
+    const isValidMove = (board: string, position: string): boolean => board.indexOf(position) !== -1;
+
+    const playTurn = (board: string, position: number | string): { newBoard: string, nextPlayer: string } => {
         const tiles = board.split('.');
         const tile = position.toString();
         const sqrt = Math.sqrt(tiles.length);
@@ -43,7 +45,10 @@ export function Fifteen(cp: CommandParam): Promise<Embed | string> {
             || (Math.abs(tileIndex - blankTileIndex) === sqrt && tileCol === blankTileCol)) {
                 tiles[tileIndex] = '';
                 tiles[blankTileIndex] = tile;
-                return tiles.join('.');
+                return {
+                    newBoard: tiles.join('.'),
+                    nextPlayer: 'x'
+                };
         } else return undefined;
     };
 
@@ -85,10 +90,10 @@ export function Fifteen(cp: CommandParam): Promise<Embed | string> {
 
     if (cp.commandValue.startsWith('start')) {
         for (let i = 0; i < 100; i++) {
-            const newBoard = playTurn(initialBoard, 1 + Math.floor(Math.random() * (size - 2)));
+            const { newBoard } = playTurn(initialBoard, 1 + Math.floor(Math.random() * (size - 2)));
             initialBoard = newBoard || initialBoard;
         }
     }
 
-    return new AbstractGame(cmd, title, initialBoard, players, playTurn, checkForWin, renderBoard).compute(cp);
+    return new AbstractGame(cmd, title, initialBoard, players, isValidMove, playTurn, checkForWin, renderBoard).compute(cp);
 };

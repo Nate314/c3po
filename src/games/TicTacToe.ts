@@ -11,7 +11,14 @@ export function TicTacToe(cp: CommandParam): Promise<Embed | string> {
 
     const players = 2;
 
-    const playTurn = (board, position, xORo) => board.replace(position, xORo);
+    const isValidMove = (board: string, position: string): boolean => board.indexOf(position) !== -1;
+
+    const playTurn = (board: string, position: string, xORo: string): { newBoard: string, nextPlayer: string } => {
+        return {
+            newBoard: board.replace(position, xORo),
+            nextPlayer: xORo === 'x' ? 'o' : 'x'
+        };
+    };
 
     const checkForWin = (board: string): string => {
         const row1 = [board[0], board[1], board[2]];
@@ -59,5 +66,5 @@ export function TicTacToe(cp: CommandParam): Promise<Embed | string> {
         return result;
     };
 
-    return new AbstractGame(cmd, title, initialBoard, players, playTurn, checkForWin, renderBoard).compute(cp);
+    return new AbstractGame(cmd, title, initialBoard, players, isValidMove, playTurn, checkForWin, renderBoard).compute(cp);
 };

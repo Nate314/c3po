@@ -3,17 +3,35 @@ import { Client, Message } from 'discord.js'
 import { Browser } from './src/Utility';
 import * as config from './config.json';
 
+const isDebugMode = true;
+const authorizedDebugUsers = [
+    'Nate314#3206',
+    'c3po#1433',
+];
+
 const bot = new Client();
 
 // condensing bot.on functions being used
-const botOnMessage = (callback) => bot.on('message', message => callback(message));
-const botOnReady = (callback) => bot.on('ready', () => callback());
+const botOnMessage = callback => bot.on('message', message => callback(message));
+const botOnReady = callback => bot.on('ready', () => {
+    bot.user.setActivity(isDebugMode ? 'in development' : 'c?help', {
+        type: 'PLAYING',
+        url: 'https://github.com/nate314/c3po'
+    });
+    callback();
+});
 
 // on 'message'
 botOnMessage((message: Message) => {
     // only parse messages that start with c?
     if (message.content.indexOf('c?') === 0) {
         const startTime = new Date().getTime();
+        if (isDebugMode) {
+            if (!authorizedDebugUsers.includes(`${message.author.username}#${message.author.discriminator}`)) {
+                sendTheMessage(message, `c3po is currently under development. Only ${JSON.stringify(authorizedDebugUsers)} can use c3po commands at this time.`, startTime);
+                return;
+            }
+        }
         message.channel.startTyping();
         let resp = undefined;
         // parse commandKey and commandValue

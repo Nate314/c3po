@@ -8,23 +8,33 @@ export class AbstractGame {
     private cmd: string;
     private gameTitle: string;
     private initialBoard: string;
-    private playTurn: any;
-    private checkForWin: any;
-    private renderBoard: any;
+    private isValidMove: (board: string, position: string, xORo: string) => boolean;
+    private playTurn: (board: string, position: number | string, xORo: string) => { newBoard: string, nextPlayer: string };
+    private checkForWin: (board: string) => string;
+    private renderBoard: (board: string) => string;
     private multiPlayer: boolean;
 
     /**
      * @param cmd command used to interact with the game
      * @param gameTitle title to display for the game
+     * @param isValidMove function used to check if requested move is valid
      * @param playTurn function used to calculate the next board
      * @param checkForWin function used to check if a player has won
      * @param renderBoard function used to render the game board
      */
-    constructor(cmd: string, gameTitle: string, initialBoard: string,
-        players: number, playTurn: any, checkForWin: any, renderBoard: any) {
+    constructor(cmd: string,
+        gameTitle: string,
+        initialBoard: string,
+        players: number,
+        isValidMove: (board: string, position: string, xORo: string) => boolean,
+        playTurn: (board: string, position: number | string, xORo: string) => { newBoard: string, nextPlayer: string },
+        checkForWin: (board: string) => string,
+        renderBoard: (board: string) => string
+    ) {
             this.cmd = cmd;
             this.gameTitle = gameTitle;
             this.initialBoard = initialBoard;
+            this.isValidMove = isValidMove;
             this.playTurn = playTurn;
             this.renderBoard = renderBoard;
             this.checkForWin = checkForWin;
@@ -87,15 +97,17 @@ export class AbstractGame {
         } else {
             if (sender && position) return await cp.message.channel.fetchMessages({ limit: 20 })
                 .then(messages => {
+                    const mappedMessages = messages.keyArray().map(k => ({key: k, author: messages.get(k).author.username, content: messages.get(k).content, embed: messages.get(k).embeds[0]}));
                     // search for last message
-                    for (let key of messages.keyArray()) {
+                    for (let mappedMessage of mappedMessages) {
+                        console.log(mappedMessage.key);
                         // that was sent by c3po
-                        if (messages.get(key).member.user.username === 'c3po') {
-                            const embed = messages.get(key).embeds.pop();
+                        if (mappedMessage.author === 'c3po') {
+                            const embed = mappedMessage.embed;
                             // and contains an embed with {gameTitle} in the title
                             if (embed && embed.title && (embed.title.indexOf(this.gameTitle) !== -1)) {
                                 if (embed.title.indexOf('won') !== -1) {
-                                    return `${embed.title} . . . run the command 'c?tictactoe start${this.multiPlayer ? ' <username>' : ''}' to start a new game`;
+                                    return `${embed.title} . . . run the command 'c?${this.cmd} start${this.multiPlayer ? ' <username>' : ''}' to start a new game`;
                                 }
                                 // and is a game with the sending user
                                 else if (embed.footer.text && embed.footer.text.indexOf(sender) !== -1) {
@@ -121,8 +133,8 @@ export class AbstractGame {
                     }
                     return 'Could not find game in the past 20 messages';
                 })
-                .catch(() => {
-                    return 'Error retrieving messages';
+                .catch(e => {
+                    return JSON.stringify(e); //'Error retrieving messages';
                 });
             else return 'Error retrieving sender or position';
         }
@@ -131,10 +143,10 @@ export class AbstractGame {
     // calculates a move
     private async move(xORo: string, sender: string, otherplayer: string, position: string, board: string) {
         // make sure the position requested is available
-        if (board.indexOf(position) !== -1) {
+        if (this.isValidMove(board, position, xORo)) {
             if (otherplayer && sender && board) {
-                let title = `${this.gameTitle} (${otherplayer}'s turn) . . . .`;
-                const newBoard = this.playTurn(board, position, xORo);
+                const { newBoard, nextPlayer } = this.playTurn(board, position, xORo);
+                let title = `${this.gameTitle} (${nextPlayer === xORo ? sender : otherplayer}'s turn) . . . .`;
                 if (newBoard) {
                     let winner = this.checkForWin(newBoard);
                     if (winner !== '') {
@@ -145,7 +157,12 @@ export class AbstractGame {
                         if (winner === sender || winner === otherplayer) title = `${winner} won ${this.gameTitle} . . .`;
                     }
                     // send back new board
-                    const newFooter = `${this.multiPlayer ? otherplayer : sender},${xORo === 'x' ? 'o' : 'x'},${sender},${xORo},${newBoard}`;
+                    let newFooter;
+                    if (xORo === nextPlayer) {
+                        newFooter = `${this.multiPlayer ? sender : otherplayer},${xORo},${otherplayer},${xORo === 'x' ? 'o' : 'x'},${newBoard}`;
+                    } else {
+                        newFooter = `${this.multiPlayer ? otherplayer : sender},${xORo === 'x' ? 'o' : 'x'},${sender},${xORo},${newBoard}`;
+                    }
                     const renderedBoard = this.renderBoard(newBoard);
                     return makeEmbed(title, renderedBoard, undefined, undefined, newFooter);
                 } else return 'Invalid move';
