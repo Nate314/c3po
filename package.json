@@ -18,11 +18,11 @@
     "request": "^2.88.2",
     "request-promise": "^4.2.4",
     "tsc": "^1.20150623.0",
-    "typescript": "^3.3.3",
+    "typescript": "^3.9.10",
     "typescript-require": "^0.2.10",
     "watch": "^1.0.2"
   },
   "devDependencies": {
-    "@types/node": "^13.9.3"
+    "@types/node": "^14.0.4"
   }
 }

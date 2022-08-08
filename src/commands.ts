@@ -1,12 +1,15 @@
 import { RichEmbed, Message } from 'discord.js';
 import { makeEmbed, Browser } from './Utility';
-import { executeCode } from './CodeRunner';
 import { TicTacToe } from './games/TicTacToe';
+import { initializeBrowser } from '../main';
+import { executeCode } from './CodeRunner';
 import { Fifteen } from './games/Fifteen';
 import { Mancala } from './games/Mancala';
 import { HttpClient } from './httpclient';
-import { Say2 } from './Say2';
 import * as db from '../db.json';
+import { Say2 } from './Say2';
+
+const simplegamerendersUrl = 'https://simplegamerenders.nathangawith.com';
 
 export class Embed {
     embed: RichEmbed;
@@ -76,7 +79,7 @@ export class Commands {
             if (typeof resp === 'object') {
                 const embed = (<Embed> resp).embed;
                 const board = embed.footer.text.split(',')[4].split('').join(joinString);
-                const url = `https://simplegamerenders.nathangawith.com/${path}/?colors=${colors}&board=${board}`;
+                const url = `${simplegamerendersUrl}/${path}/?colors=${colors}&board=${board}`;
                 const filename = await Commands.puppeteer((path === 'mancala' ? 2 : 1) * 546, 546, url);
                 const richEmbed = makeEmbed(embed.title, undefined, undefined, filename, embed.footer.text);
                 return richEmbed;
@@ -98,7 +101,7 @@ export class Commands {
         return Commands.renderGame(Mancala, cp, 'mancala', 'magenta.blue', '');
     }
 
-    public static async puppeteer(w: number, h: number, url: string): Promise<string> {
+    public static async puppeteer(w: number, h: number, url: string, timeout: number = 0): Promise<string> {
         const fs = require('fs');
         await Browser.page.setViewport({ width: w, height: h });
         await Browser.page.goto(url);
@@ -106,14 +109,14 @@ export class Commands {
             setTimeout(async () => {
                 const filename = `puppeteer-${new Date().getTime()}.png`;
                 await Browser.page.screenshot({path: filename, type: 'png'});
-                // await Browser.browser.close();
+                await initializeBrowser();
                 setTimeout(() => {
                     fs.unlink(filename, function (err) {
                         if (err) throw err;
                     });
                 }, 2000);
                 resolve(filename);
-            }, 0);
+            }, timeout);
         });
     }
 
@@ -141,6 +144,34 @@ export class Commands {
 
     public static async programmerhumor(cp: CommandParam) {
         return Commands.redditImages('programmerhumor', cp);
+    }
+
+    public static async mcserverstatus(cp: CommandParam): Promise<{isError: boolean, response: Embed | string, metadata?: { serverName: string, serverAddress: string }}> {
+        if (cp.commandValue?.split(' ')?.length == 2) {
+            const [ serverName, serverAddress ] = cp.commandValue?.split(' ');
+            const requestUrl = `${simplegamerendersUrl}/mcserverstatus/index.html?servername=${serverName}&serveraddress=${serverAddress}&date=${new Date().getTime()}`;
+            console.log(requestUrl);
+            const filename = await Commands.puppeteer(768, 400, requestUrl, 5000);
+            const embedTitle = `${serverName} Status (Last updated ${new Date().toLocaleString()})`;
+            const richEmbed = makeEmbed(embedTitle, undefined, undefined, filename, undefined);
+            if (`${cp.message.author.username}#${cp.message.author.discriminator}` === 'c3po#1433') {
+                cp.message.edit(richEmbed);
+                return undefined;
+            }
+            return {
+                isError: false,
+                response: richEmbed,
+                metadata: {
+                    serverName,
+                    serverAddress,
+                },
+            };
+        } else {
+            return {
+                isError: true,
+                response: 'Could not parse message. Please send in the form: \'c?mcserverstatus ExampleServerName example.server.address\'',
+            };
+        }
     }
 
     public static async redditImages(subreddit: string, cp: CommandParam): Promise<Embed | string> {
@@ -208,6 +239,7 @@ export const commandList = {
     'mancala': Commands.mancala,
     'reddit': Commands.reddit,
     'ph': Commands.programmerhumor,
+    'mcserverstatus': Commands.mcserverstatus,
     'pup': Commands.pup,
     'js': Commands.executeJS,
     'py': Commands.executePython,
