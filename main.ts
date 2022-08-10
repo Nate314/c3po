@@ -1,4 +1,4 @@
-import { CommandParam, commandList, Embed, Commands } from './src/commands';
+import { CommandParam, commandList, Embed, updateMCServerStatusMessages, cacheMCServerStatusRequest } from './src/commands';
 import { Client, Message } from 'discord.js'
 import { Browser } from './src/Utility';
 import * as config from './config.json';
@@ -8,18 +8,6 @@ const authorizedDebugUsers = [
     'Nate314#3206',
     'c3po#1433',
 ];
-
-const cachedMCServerStatusRequests: { serverName: string, serverAddress: string, message: Message }[] = [];
-const updateMCServerStatusMessages = () => {
-    console.log(`updateMCServerStatusMessages at ${new Date().toLocaleTimeString()}`);
-    cachedMCServerStatusRequests.forEach(x => {
-        Commands.mcserverstatus({
-            commandKey: 'mcserverstatus',
-            commandValue: `${x.serverName} ${x.serverAddress}`,
-            message: x.message,
-        })
-    });
-}
 
 const bot = new Client();
 
@@ -84,7 +72,7 @@ botOnMessage((message: Message) => {
                 const sentMessageCallback = (sentMessage: Message) => {
                     if (commandKey === 'mcserverstatus') {
                         if (!response.isError) {
-                            cachedMCServerStatusRequests.push({
+                            cacheMCServerStatusRequest({
                                 serverName: response.metadata.serverName,
                                 serverAddress: response.metadata.serverAddress,
                                 message: sentMessage,

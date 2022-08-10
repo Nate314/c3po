@@ -8,8 +8,33 @@ import { Mancala } from './games/Mancala';
 import { HttpClient } from './httpclient';
 import * as db from '../db.json';
 import { Say2 } from './Say2';
+import axios from 'axios';
 
 const simplegamerendersUrl = 'https://simplegamerenders.nathangawith.com';
+
+const cachedMCServerStatusRequests: { serverName: string, serverAddress: string, message: Message }[] = [];
+export function cacheMCServerStatusRequest(request) {
+    const cachedMCServerStatusRequest = cachedMCServerStatusRequests.find(x => x.serverName === request.serverName);
+    if (!cachedMCServerStatusRequest) {
+        cachedMCServerStatusRequests.push(request);
+    } else {
+        cachedMCServerStatusRequest.message = request.message;
+    }
+}
+export function updateMCServerStatusMessages(serverName = undefined) {
+    console.log(`updateMCServerStatusMessages at ${new Date().toLocaleTimeString()}`);
+    cachedMCServerStatusRequests.filter(x => serverName ? x.serverName === serverName : true).forEach(x => {
+        Commands.mcserverstatus({
+            commandKey: 'mcserverstatus',
+            commandValue: `${x.serverName} ${x.serverAddress}`,
+            message: x.message,
+        })
+    });
+};
+
+export function isMessageFromC3PO(message) {
+    return `${message.author.username}#${message.author.discriminator}` === 'c3po#1433';
+}
 
 export class Embed {
     embed: RichEmbed;
@@ -149,23 +174,66 @@ export class Commands {
     public static async mcserverstatus(cp: CommandParam): Promise<{isError: boolean, response: Embed | string, metadata?: { serverName: string, serverAddress: string }}> {
         if (cp.commandValue?.split(' ')?.length == 2) {
             const [ serverName, serverAddress ] = cp.commandValue?.split(' ');
-            const requestUrl = `${simplegamerendersUrl}/mcserverstatus/index.html?servername=${serverName}&serveraddress=${serverAddress}&date=${new Date().getTime()}`;
-            console.log(requestUrl);
-            const filename = await Commands.puppeteer(768, 400, requestUrl, 5000);
-            const embedTitle = `${serverName} Status (Last updated ${new Date().toLocaleString()})`;
-            const richEmbed = makeEmbed(embedTitle, undefined, undefined, filename, undefined);
-            if (`${cp.message.author.username}#${cp.message.author.discriminator}` === 'c3po#1433') {
-                cp.message.edit(richEmbed);
-                return undefined;
+            if (serverName === 'please' && serverAddress === 'update') {
+                let responseMessage = 'Sure! happy to help.';
+                await cp.message.channel.fetchMessages({ limit: 20 }).then(messages => {
+                    const lastMessageFromC3PO = messages.find(x => isMessageFromC3PO(x));
+                    if (lastMessageFromC3PO.embeds[0]?.description?.startsWith('MCServerStatus')) {
+                        const [ _, cachedServerName, cachedServerAddress ] = lastMessageFromC3PO.embeds[0]?.description.split('|');
+                        cachedMCServerStatusRequests.push({
+                            serverName: cachedServerName,
+                            serverAddress: cachedServerAddress,
+                            message: lastMessageFromC3PO
+                        });
+                        updateMCServerStatusMessages(cachedServerName);
+                    } else {
+                        responseMessage = 'could not find recent mcserverstatus request';
+                    }
+                })
+                return {
+                    isError: true,
+                    response: responseMessage,
+                    metadata: null,
+                };
             }
-            return {
-                isError: false,
-                response: richEmbed,
-                metadata: {
-                    serverName,
-                    serverAddress,
-                },
-            };
+            console.log(`https://api.mcsrvstat.us/2/${serverAddress}`);
+            return axios.get(`https://api.mcsrvstat.us/2/${serverAddress}`).then(x => x.data).then(async data => {
+                console.log('data', data);
+                const queryParams = {
+                    serverName: serverName,
+                    serverAddress: data.hostname,
+                    isServerOnline: data.online,
+                    serverDescription: data.motd.clean,
+                    onlineUsernameList: (data.players.list || []).join(','),
+                    date: new Date().getTime(),
+                };
+                console.log(queryParams);
+                const queryString = Object.keys(queryParams).map(key => `${key}=${queryParams[key]}`).join('&');
+                const requestUrl = `${simplegamerendersUrl}/mcserverstatus/index.html?${queryString}`;
+                console.log(requestUrl);
+                const filename = await Commands.puppeteer(768, 400, requestUrl, 5000);
+                const embedTitle = `${serverName} Status`;
+                const richEmbed = makeEmbed(embedTitle, `MCServerStatus|${serverName}|${serverAddress}`, undefined, filename, undefined);
+                if (isMessageFromC3PO(cp.message)) {
+                    // cp.message.edit(richEmbed);
+                    const newMessage = await cp.message.channel.send(richEmbed);
+                    cacheMCServerStatusRequest({
+                        serverName,
+                        serverAddress,
+                        message: newMessage
+                    });
+                    cp.message.delete();
+                    return undefined;
+                }
+                return {
+                    isError: false,
+                    response: richEmbed,
+                    metadata: {
+                        serverName,
+                        serverAddress,
+                    },
+                };
+            });
         } else {
             return {
                 isError: true,

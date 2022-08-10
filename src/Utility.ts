@@ -1,13 +1,22 @@
-import { RichEmbed } from 'discord.js';
+import { Attachment, RichEmbed } from 'discord.js';
 import { Embed } from './commands';
 
-export function makeEmbed(title: RichEmbed | string, description?: string, imageurl?: string, file?: string, footer?: string): Embed {
+export function makeEmbed(title: RichEmbed | string, description?: string, imageurl?: string, imageName?: string, footer?: string): Embed {
     if (title['split'] === undefined) return <Embed> { embed: <RichEmbed> title };
     const richEmbed = <RichEmbed> { color: 3447003, title: title };
     if (description) richEmbed.description = description;
     if (imageurl) richEmbed.image = { url: imageurl };
     if (footer) richEmbed.footer = { text: footer };
-    if (file) richEmbed.files = [ file ];
+    if (imageName) {
+        // const fs = require('fs');
+        // const buffer = fs.readFileSync(`./${imageName}`);
+        richEmbed.files = [ imageName ];
+        // richEmbed.files = [ new Attachment(buffer, imageName) ];
+        // richEmbed.image = {
+        //     url: `attachment://${imageName}`
+        // };
+    }
+    richEmbed.timestamp = new Date();
     return <Embed> { embed: richEmbed };
 }
 
