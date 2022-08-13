@@ -215,6 +215,7 @@ export class Commands {
                 const embedTitle = `${serverName} Status`;
                 const richEmbed = makeEmbed(embedTitle, `MCServerStatus|${serverName}|${serverAddress}`, undefined, filename, undefined);
                 if (isMessageFromC3PO(cp.message)) {
+                    cp.message.guild.members.get(cp.message.author.id).setNickname(queryParams.onlineUsernameList || 'No one is crafting');
                     // cp.message.edit(richEmbed);
                     const newMessage = await cp.message.channel.send(richEmbed);
                     cacheMCServerStatusRequest({
