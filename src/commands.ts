@@ -216,10 +216,10 @@ export class Commands {
                 const embedTitle = `${serverName} Status`;
                 const richEmbed = makeEmbed(embedTitle, `MCServerStatus|${serverName}|${serverAddress}`, undefined, filename, undefined);
                 if (isMessageFromC3PO(cp.message)) {
-                    const nicknameUserList = `(${playerList.join(', ')})`;
-                    const nicknameServerOnline = `📶Online: ${playerList.length} Player${playerList.length > 1 ? 's' : ''}`;
+                    const nicknameUserList = playerList.length ? `(${playerList.join(', ')})` : '';
+                    const nicknameServerOnline = `📶${playerList.length} player${playerList.length === 1 ? '' : 's'}`;
                     const nicknameCompleteOnlineMessage = `${nicknameServerOnline} ${nicknameUserList}`;
-                    const nicknameServerDown = '🚨Offline';
+                    const nicknameServerDown = '🚨 Offline';
                     const nickname = !queryParams.isServerOnline ? nicknameServerDown
                         : (nicknameCompleteOnlineMessage.length <= 32 ? nicknameCompleteOnlineMessage : nicknameServerOnline);
                     cp.message.guild.members.get(cp.message.author.id).setNickname(nickname);
