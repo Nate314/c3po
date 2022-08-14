@@ -199,13 +199,13 @@ export class Commands {
             console.log(`https://api.mcsrvstat.us/2/${serverAddress}`);
             return axios.get(`https://api.mcsrvstat.us/2/${serverAddress}`).then(x => x.data).then(async data => {
                 console.log('data', data);
-                const playerList = data.players.list;
+                const playerList = (data.players.list || []);
                 const queryParams = {
                     serverName: serverName,
                     serverAddress: data.hostname,
                     isServerOnline: data.online,
                     serverDescription: data.motd.clean,
-                    onlineUsernameList: (playerList || []).join(','),
+                    onlineUsernameList: playerList.join(','),
                     date: new Date().getTime(),
                 };
                 console.log(queryParams);
