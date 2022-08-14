@@ -199,12 +199,13 @@ export class Commands {
             console.log(`https://api.mcsrvstat.us/2/${serverAddress}`);
             return axios.get(`https://api.mcsrvstat.us/2/${serverAddress}`).then(x => x.data).then(async data => {
                 console.log('data', data);
+                const playerList = data.players.list;
                 const queryParams = {
                     serverName: serverName,
                     serverAddress: data.hostname,
                     isServerOnline: data.online,
                     serverDescription: data.motd.clean,
-                    onlineUsernameList: (data.players.list || []).join(','),
+                    onlineUsernameList: (playerList || []).join(','),
                     date: new Date().getTime(),
                 };
                 console.log(queryParams);
@@ -215,7 +216,13 @@ export class Commands {
                 const embedTitle = `${serverName} Status`;
                 const richEmbed = makeEmbed(embedTitle, `MCServerStatus|${serverName}|${serverAddress}`, undefined, filename, undefined);
                 if (isMessageFromC3PO(cp.message)) {
-                    cp.message.guild.members.get(cp.message.author.id).setNickname(queryParams.onlineUsernameList || 'No one is crafting');
+                    const nicknameUserList = `(${playerList.join(', ')})`;
+                    const nicknameServerOnline = `📶Online: ${playerList.length} Player${playerList.length > 1 ? 's' : ''}`;
+                    const nicknameCompleteOnlineMessage = `${nicknameServerOnline} ${nicknameUserList}`;
+                    const nicknameServerDown = '🚨Offline';
+                    const nickname = !queryParams.isServerOnline ? nicknameServerDown
+                        : (nicknameCompleteOnlineMessage.length <= 32 ? nicknameCompleteOnlineMessage : nicknameServerOnline);
+                    cp.message.guild.members.get(cp.message.author.id).setNickname(nickname);
                     // cp.message.edit(richEmbed);
                     const newMessage = await cp.message.channel.send(richEmbed);
                     cacheMCServerStatusRequest({
