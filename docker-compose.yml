@@ -1,0 +1,10 @@
+services:
+
+    bot:
+        build: .
+        environment:
+            DISCORD_TOKEN: ${DISCORD_TOKEN:-}
+        # Replaces the old run.sh respawn loop.
+        restart: unless-stopped
+        security_opt:
+            - no-new-privileges:true

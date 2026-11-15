@@ -2,28 +2,19 @@
   "name": "bot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && node dist/main.js"
+    "build": "tsc",
+    "start": "node dist/main.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/core-js": "^2.5.0",
-    "axios": "^0.27.2",
-    "discord.js": "^11.4.2",
-    "dom-to-image": "^2.6.0",
-    "fs": "0.0.1-security",
-    "puppeteer": "^2.1.1",
-    "request": "^2.88.2",
-    "request-promise": "^4.2.4",
-    "tsc": "^1.20150623.0",
-    "typescript": "^3.9.10",
-    "typescript-require": "^0.2.10",
-    "watch": "^1.0.2"
+    "discord.js": "^14.28.1",
+    "puppeteer": "^25.17.0"
   },
   "devDependencies": {
-    "@types/node": "^14.0.4"
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
   }
 }
