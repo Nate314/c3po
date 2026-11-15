@@ -1,6 +1,9 @@
 import { APIEmbed } from 'discord.js';
 import { Embed } from './commands';
 
+// For fire-and-forget promises: node exits on an unhandled rejection.
+export const logFailure = (what: string) => (err: unknown) => console.error(`${what} failed:`, err);
+
 export function makeEmbed(title: APIEmbed | string, description?: string, imageurl?: string, imageName?: string, footer?: string): Embed {
     if (typeof title !== 'string') return { embeds: [title] };
     const richEmbed: APIEmbed = { color: 3447003, title: title };

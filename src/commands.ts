@@ -1,5 +1,5 @@
 import { APIEmbed, Message, SendableChannels } from 'discord.js';
-import { makeEmbed, Browser } from './Utility';
+import { makeEmbed, Browser, logFailure } from './Utility';
 import { TicTacToe } from './games/TicTacToe';
 import { initializeBrowser } from '../main';
 import { executeCode } from './CodeRunner';
@@ -29,7 +29,7 @@ export function updateMCServerStatusMessages(serverName = undefined) {
             commandKey: 'mcserverstatus',
             commandValue: `${x.serverName} ${x.serverAddress}`,
             message: x.message,
-        })
+        }).catch(logFailure(`mcserverstatus update for ${x.serverName}`));
     });
 };
 
@@ -132,18 +132,18 @@ export class Commands {
         const fs = require('fs');
         await Browser.page.setViewport({ width: w, height: h });
         await Browser.page.goto(url);
-        return new Promise(resolve => {
-            setTimeout(async () => {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => (async () => {
                 const filename = `puppeteer-${new Date().getTime()}.png`;
                 await Browser.page.screenshot({path: filename, type: 'png'});
                 await initializeBrowser();
                 setTimeout(() => {
                     fs.unlink(filename, function (err) {
-                        if (err) throw err;
+                        if (err) console.error('could not delete screenshot:', err);
                     });
                 }, 2000);
                 resolve(filename);
-            }, timeout);
+            })().catch(reject), timeout);
         });
     }
 
@@ -224,7 +224,7 @@ export class Commands {
                     const nicknameServerDown = '🚨 Offline';
                     const nickname = !queryParams.isServerOnline ? nicknameServerDown
                         : (nicknameCompleteOnlineMessage.length <= 32 ? nicknameCompleteOnlineMessage : nicknameServerOnline);
-                    cp.message.guild.members.me.setNickname(nickname); // the author is c3po itself
+                    cp.message.guild.members.me.setNickname(nickname).catch(logFailure('setNickname')); // the author is c3po itself
                     // cp.message.edit(richEmbed);
                     const newMessage = await cp.message.channel.send(richEmbed);
                     cacheMCServerStatusRequest({
@@ -232,7 +232,7 @@ export class Commands {
                         serverAddress,
                         message: newMessage as SendableMessage
                     });
-                    cp.message.delete();
+                    cp.message.delete().catch(logFailure('delete old status message'));
                     return undefined;
                 }
                 return {
@@ -261,7 +261,7 @@ export class Commands {
                     const element = responsebody['data']['children'][i];
                     if (element) {
                         const { title, url } = element['data'];
-                        cp.message.channel.send(makeEmbed(title, undefined, url));
+                        cp.message.channel.send(makeEmbed(title, undefined, url)).catch(logFailure('send reddit post'));
                     }
                 }
                 return response;
@@ -271,7 +271,7 @@ export class Commands {
                     const element = responsebody['data']['children'][index];
                     if (element) {
                         const { title, url } = element['data'];
-                        cp.message.channel.send(makeEmbed(title, undefined, url));
+                        cp.message.channel.send(makeEmbed(title, undefined, url)).catch(logFailure('send reddit post'));
                         break;
                     } else {
                         index++;

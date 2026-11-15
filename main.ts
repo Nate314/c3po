@@ -1,7 +1,7 @@
 import { CommandParam, commandList, Embed, updateMCServerStatusMessages, cacheMCServerStatusRequest, SendableMessage } from './src/commands';
 import { ActivityType, Client, GatewayIntentBits, Message, Partials } from 'discord.js'
 import puppeteer from 'puppeteer';
-import { Browser } from './src/Utility';
+import { Browser, logFailure } from './src/Utility';
 
 const token = process.env.DISCORD_TOKEN;
 if (!token) {
@@ -62,7 +62,7 @@ botOnMessage((message: SendableMessage) => {
                 return;
             }
         }
-        message.channel.sendTyping();
+        message.channel.sendTyping().catch(logFailure('sendTyping'));
         let resp = undefined;
         // parse commandKey and commandValue
         const userMessage = message.content.substr('c?'.length);
@@ -110,7 +110,7 @@ export const initializeBrowser = async () => {
 bot.login(token);
 botOnReady(() => {
     (async callback => {
-        initializeBrowser();
+        initializeBrowser().catch(logFailure('initializeBrowser'));
         callback();
     })(() => {
         console.log('ready');
@@ -122,7 +122,8 @@ function sendTheMessage(message: SendableMessage, response: Embed | string, star
     return new Promise(resolve => {
         setTimeout(() => {
             response = response === '' ? '.' : response;
-            return message.channel.send(response).then(sentMessage => resolve(callback ? callback(sentMessage as Message) : undefined));
+            return message.channel.send(response).then(sentMessage => resolve(callback ? callback(sentMessage as Message) : undefined))
+                .catch(err => { logFailure('send reply')(err); resolve(undefined); });
         }, Math.min(1000, 1000 - Math.abs(now - startTime)));
     });
 }

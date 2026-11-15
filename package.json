@@ -5,6 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
+    "test": "npm run build && node test/survives-failures.js",
     "start": "node dist/main.js"
   },
   "author": "",
