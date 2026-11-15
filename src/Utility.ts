@@ -1,23 +1,26 @@
-import { Attachment, RichEmbed } from 'discord.js';
+import { APIEmbed } from 'discord.js';
 import { Embed } from './commands';
 
-export function makeEmbed(title: RichEmbed | string, description?: string, imageurl?: string, imageName?: string, footer?: string): Embed {
-    if (title['split'] === undefined) return <Embed> { embed: <RichEmbed> title };
-    const richEmbed = <RichEmbed> { color: 3447003, title: title };
+// For fire-and-forget promises: node exits on an unhandled rejection.
+export const logFailure = (what: string) => (err: unknown) => console.error(`${what} failed:`, err);
+
+export function makeEmbed(title: APIEmbed | string, description?: string, imageurl?: string, imageName?: string, footer?: string): Embed {
+    if (typeof title !== 'string') return { embeds: [title] };
+    const richEmbed: APIEmbed = { color: 3447003, title: title };
+    const result: Embed = { embeds: [richEmbed] };
     if (description) richEmbed.description = description;
     if (imageurl) richEmbed.image = { url: imageurl };
     if (footer) richEmbed.footer = { text: footer };
     if (imageName) {
         // const fs = require('fs');
         // const buffer = fs.readFileSync(`./${imageName}`);
-        richEmbed.files = [ imageName ];
-        // richEmbed.files = [ new Attachment(buffer, imageName) ];
+        result.files = [ imageName ];
         // richEmbed.image = {
         //     url: `attachment://${imageName}`
         // };
     }
-    richEmbed.timestamp = new Date();
-    return <Embed> { embed: richEmbed };
+    richEmbed.timestamp = new Date().toISOString();
+    return result;
 }
 
 export class Browser {
