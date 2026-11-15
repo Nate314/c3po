@@ -17,3 +17,7 @@ I am currently hosting this bot on a raspberry pi at home.
 In order to avoid potential security issues associated to running unknown code on my hardware, I am running the js or py code from the c?js and c?py commands by sending the code as a string over to the correlated API that I wrote on https://repl.it/
 JS code is executed here - https://repl.it/@Nate314/test
 Python code is executed here - https://repl.it/@Nate314/Python-Test
+
+## Running
+
+The bot runs in Docker. Copy `.env.example` to `.env` and set `DISCORD_TOKEN` to the bot token (the bot needs the Message Content intent enabled in the Discord developer portal). Then start it with `./run.ps1` (PowerShell) or `./run.sh` (Git Bash, macOS, Linux), which use the [compose-launcher](https://github.com/Nate314/compose-launcher) submodule. `./run.ps1 logs -f bot` shows the logs and `./run.ps1 down` stops it.
