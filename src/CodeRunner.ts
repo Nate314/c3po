@@ -1,6 +1,5 @@
-import { RichEmbed } from 'discord.js';
-import { HttpClient } from './httpclient';
 import { CommandParam, Embed } from './commands';
+import { logFailure } from './Utility';
 
 const get_code = (val: string, langs: string[]): string => {
     if (!!val && val.substr(0, 3) === '```' && val.substr(val.length - 3, 3) === '```') {
@@ -32,14 +31,18 @@ const get_title = (title: string): string => {
 
 export const executeCode = async (cp: CommandParam, queryURL: string, codeval: string, langs: string[]): Promise<Embed | string> => {
     const code = get_code(codeval, langs);
-    return HttpClient.post(queryURL, JSON.stringify({ code: code })).then(response => {
-        cp.message.channel.send(<Embed> {
-            embed: <RichEmbed> {
+    return fetch(queryURL, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code: code }),
+    }).then(x => x.ok ? x.text() : Promise.reject(new Error(`${x.status} ${x.statusText}`))).then(response => {
+        cp.message.channel.send({
+            embeds: [{
                 color: 3447003,
                 title: get_title(code),
                 description: response
-            }
-        });
+            }]
+        }).catch(logFailure('send code result'));
         return '';
     });
 };

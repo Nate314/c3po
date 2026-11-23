@@ -75,7 +75,7 @@ export class AbstractGame {
     public async computeTurns(cp: CommandParam, positions: number[]): Promise<Embed | string> {
         const getBoard = (result: Embed | string) => {
             if (typeof result === 'object') {
-                const richEmbed = (<Embed> result).embed;
+                const richEmbed = (<Embed> result).embeds[0];
                 return (richEmbed.title.includes('won')) ? undefined : richEmbed.footer.text.split(',')[4];
             } else return undefined;
         }
@@ -95,9 +95,9 @@ export class AbstractGame {
         if (!!theBoard && !this.multiPlayer) {
             return this.move('x', sender, sender, position, theBoard)
         } else {
-            if (sender && position) return await cp.message.channel.fetchMessages({ limit: 20 })
+            if (sender && position) return await cp.message.channel.messages.fetch({ limit: 20 })
                 .then(messages => {
-                    const mappedMessages = messages.keyArray().map(k => ({key: k, author: messages.get(k).author.username, content: messages.get(k).content, embed: messages.get(k).embeds[0]}));
+                    const mappedMessages = [...messages.keys()].map(k => ({key: k, author: messages.get(k).author.username, content: messages.get(k).content, embed: messages.get(k).embeds[0]}));
                     // search for last message
                     for (let mappedMessage of mappedMessages) {
                         console.log(mappedMessage.key);

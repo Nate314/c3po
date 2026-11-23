@@ -1,18 +1,19 @@
-import { RichEmbed, Message } from 'discord.js';
-import { makeEmbed, Browser } from './Utility';
+import { APIEmbed, Message, SendableChannels } from 'discord.js';
+import { makeEmbed, Browser, logFailure } from './Utility';
 import { TicTacToe } from './games/TicTacToe';
 import { initializeBrowser } from '../main';
 import { executeCode } from './CodeRunner';
 import { Fifteen } from './games/Fifteen';
 import { Mancala } from './games/Mancala';
-import { HttpClient } from './httpclient';
 import * as db from '../db.json';
 import { Say2 } from './Say2';
-import axios from 'axios';
 
 const simplegamerendersUrl = 'https://simplegamerenders.nathangawith.com';
 
-const cachedMCServerStatusRequests: { serverName: string, serverAddress: string, message: Message }[] = [];
+// A message in a channel the bot can reply in (not a group DM).
+export type SendableMessage = Message & { channel: SendableChannels };
+
+const cachedMCServerStatusRequests: { serverName: string, serverAddress: string, message: SendableMessage }[] = [];
 export function cacheMCServerStatusRequest(request) {
     const cachedMCServerStatusRequest = cachedMCServerStatusRequests.find(x => x.serverName === request.serverName);
     if (!cachedMCServerStatusRequest) {
@@ -28,7 +29,7 @@ export function updateMCServerStatusMessages(serverName = undefined) {
             commandKey: 'mcserverstatus',
             commandValue: `${x.serverName} ${x.serverAddress}`,
             message: x.message,
-        })
+        }).catch(logFailure(`mcserverstatus update for ${x.serverName}`));
     });
 };
 
@@ -37,11 +38,12 @@ export function isMessageFromC3PO(message) {
 }
 
 export class Embed {
-    embed: RichEmbed;
+    embeds: APIEmbed[];
+    files?: string[];
 }
 
 export class CommandParam {
-    message: Message;
+    message: SendableMessage;
     commandKey: string;
     commandValue: string;
 }
@@ -70,7 +72,7 @@ export class Commands {
             '\nc?mixcase <message>', ' => returns the <message> in MiXeD CaSe',
             '\nc?mixcaserand <message>', ' => returns the <message> in RAndoM mixEd CASe'
         ];
-        return cp.message.channel.send(db.greeting, {files: [db.images.c3po]})
+        return cp.message.channel.send({content: db.greeting, files: [db.images.c3po]})
             .then(() => makeEmbed('c3po Commands Include:', '```\n' + commands.join('\n') + '\n```'));
     }
 
@@ -102,7 +104,7 @@ export class Commands {
     public static async renderGame(gameFunc: any, cp: CommandParam, path: string, colors: string, joinString: string): Promise<Embed | string> {
         return (<Promise<Embed | string>> gameFunc(cp)).then(async resp => {
             if (typeof resp === 'object') {
-                const embed = (<Embed> resp).embed;
+                const embed = (<Embed> resp).embeds[0];
                 const board = embed.footer.text.split(',')[4].split('').join(joinString);
                 const url = `${simplegamerendersUrl}/${path}/?colors=${colors}&board=${board}`;
                 const filename = await Commands.puppeteer((path === 'mancala' ? 2 : 1) * 546, 546, url);
@@ -130,18 +132,18 @@ export class Commands {
         const fs = require('fs');
         await Browser.page.setViewport({ width: w, height: h });
         await Browser.page.goto(url);
-        return new Promise(resolve => {
-            setTimeout(async () => {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => (async () => {
                 const filename = `puppeteer-${new Date().getTime()}.png`;
                 await Browser.page.screenshot({path: filename, type: 'png'});
                 await initializeBrowser();
                 setTimeout(() => {
                     fs.unlink(filename, function (err) {
-                        if (err) throw err;
+                        if (err) console.error('could not delete screenshot:', err);
                     });
                 }, 2000);
                 resolve(filename);
-            }, timeout);
+            })().catch(reject), timeout);
         });
     }
 
@@ -176,14 +178,14 @@ export class Commands {
             const [ serverName, serverAddress ] = cp.commandValue?.split(' ');
             if (serverName === 'please' && serverAddress === 'update') {
                 let responseMessage = 'Sure! happy to help.';
-                await cp.message.channel.fetchMessages({ limit: 20 }).then(messages => {
+                await cp.message.channel.messages.fetch({ limit: 20 }).then(messages => {
                     const lastMessageFromC3PO = messages.find(x => isMessageFromC3PO(x));
                     if (lastMessageFromC3PO.embeds[0]?.description?.startsWith('MCServerStatus')) {
                         const [ _, cachedServerName, cachedServerAddress ] = lastMessageFromC3PO.embeds[0]?.description.split('|');
                         cachedMCServerStatusRequests.push({
                             serverName: cachedServerName,
                             serverAddress: cachedServerAddress,
-                            message: lastMessageFromC3PO
+                            message: lastMessageFromC3PO as SendableMessage
                         });
                         updateMCServerStatusMessages(cachedServerName);
                     } else {
@@ -197,7 +199,7 @@ export class Commands {
                 };
             }
             console.log(`https://api.mcsrvstat.us/2/${serverAddress}`);
-            return axios.get(`https://api.mcsrvstat.us/2/${serverAddress}`).then(x => x.data).then(async data => {
+            return fetch(`https://api.mcsrvstat.us/2/${serverAddress}`).then(x => x.json()).then(async data => {
                 console.log('data', data);
                 const playerList = (data.players.list || []);
                 const queryParams = {
@@ -222,15 +224,15 @@ export class Commands {
                     const nicknameServerDown = '🚨 Offline';
                     const nickname = !queryParams.isServerOnline ? nicknameServerDown
                         : (nicknameCompleteOnlineMessage.length <= 32 ? nicknameCompleteOnlineMessage : nicknameServerOnline);
-                    cp.message.guild.members.get(cp.message.author.id).setNickname(nickname);
+                    cp.message.guild.members.me.setNickname(nickname).catch(logFailure('setNickname')); // the author is c3po itself
                     // cp.message.edit(richEmbed);
                     const newMessage = await cp.message.channel.send(richEmbed);
                     cacheMCServerStatusRequest({
                         serverName,
                         serverAddress,
-                        message: newMessage
+                        message: newMessage as SendableMessage
                     });
-                    cp.message.delete();
+                    cp.message.delete().catch(logFailure('delete old status message'));
                     return undefined;
                 }
                 return {
@@ -252,15 +254,14 @@ export class Commands {
 
     public static async redditImages(subreddit: string, cp: CommandParam): Promise<Embed | string> {
         const queryURL = `https://www.reddit.com/r/${subreddit}/top/.json?count=100`;
-        return HttpClient.get(queryURL).then(body => {
-            const responsebody = JSON.parse(body);
+        return fetch(queryURL).then(x => x.json()).then(responsebody => {
             if (cp.commandValue && !isNaN(Number(cp.commandValue))) {
                 let response = '';
                 for (let i = 0; i < Number(cp.commandValue); i++) {
                     const element = responsebody['data']['children'][i];
                     if (element) {
                         const { title, url } = element['data'];
-                        cp.message.channel.send(makeEmbed(title, undefined, url));
+                        cp.message.channel.send(makeEmbed(title, undefined, url)).catch(logFailure('send reddit post'));
                     }
                 }
                 return response;
@@ -270,7 +271,7 @@ export class Commands {
                     const element = responsebody['data']['children'][index];
                     if (element) {
                         const { title, url } = element['data'];
-                        cp.message.channel.send(makeEmbed(title, undefined, url));
+                        cp.message.channel.send(makeEmbed(title, undefined, url)).catch(logFailure('send reddit post'));
                         break;
                     } else {
                         index++;
